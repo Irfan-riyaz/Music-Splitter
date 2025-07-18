@@ -1,36 +1,37 @@
-# Install dependencies (if using in Colab, uncomment these lines)
-# !apt-get install -y ffmpeg
-# !pip install spleeter
-
-from google.colab import files
+import streamlit as st
 from spleeter.separator import Separator
 import os
-from IPython.display import Audio
+import tempfile
 
-# Upload an audio file
-print("Please upload an audio file (MP3 or WAV)")
-uploaded = files.upload()
+st.title("🎵 Music Splitter (Vocals & Instrumental)")
 
-filename = list(uploaded.keys())[0]
-print(f"File uploaded: {filename}")
+uploaded_file = st.file_uploader("Upload an audio file (MP3 or WAV)", type=["mp3", "wav"])
 
-# Separate vocals and accompaniment
-separator = Separator('spleeter:2stems')
-separator.separate_to_file(filename, 'output')
-print("Separation Complete!")
+if uploaded_file is not None:
+    # Save uploaded file temporarily
+    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[1]) as tmp:
+        tmp.write(uploaded_file.read())
+        tmp_path = tmp.name
 
-# Prepare download links
-base_name = os.path.splitext(filename)[0]
-vocals_path = f'output/{base_name}/vocals.wav'
-accompaniment_path = f'output/{base_name}/accompaniment.wav'
+    st.success(f"Uploaded: {uploaded_file.name}")
 
-print("⬇ Preparing downloads...")
-files.download(vocals_path)
-files.download(accompaniment_path)
+    # Run Spleeter
+    with st.spinner("Separating audio into vocals and accompaniment..."):
+        separator = Separator('spleeter:2stems')
+        separator.separate_to_file(tmp_path, 'output')
 
-# Play back results
-print("🎧 Vocals:")
-display(Audio(vocals_path))
+    # Get base name
+    base_name = os.path.splitext(os.path.basename(tmp_path))[0]
+    vocals_path = f'output/{base_name}/vocals.wav'
+    accompaniment_path = f'output/{base_name}/accompaniment.wav'
 
-print("🎸 Instrumental:")
-display(Audio(accompaniment_path))
+    # Offer playback and download
+    st.subheader("🎧 Vocals")
+    st.audio(vocals_path)
+    with open(vocals_path, "rb") as f:
+        st.download_button("Download Vocals", f, file_name="vocals.wav")
+
+    st.subheader("🎸 Instrumental")
+    st.audio(accompaniment_path)
+    with open(accompaniment_path, "rb") as f:
+        st.download_button("Download Instrumental", f, file_name="accompaniment.wav")
