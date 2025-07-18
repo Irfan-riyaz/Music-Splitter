@@ -60,7 +60,6 @@
       "metadata": {
         "id": "AC5gebRbUmwE"
       },
-      "execution_count": null,
       "outputs": []
     },
     {
@@ -84,7 +83,6 @@
       "metadata": {
         "id": "0hvlZOWfU0ZW"
       },
-      "execution_count": null,
       "outputs": []
     },
     {
@@ -101,7 +99,6 @@
       "metadata": {
         "id": "nQX_7OUuU2Vz"
       },
-      "execution_count": null,
       "outputs": []
     }
   ]
