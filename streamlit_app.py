@@ -1,37 +1,109 @@
-import streamlit as st
-from spleeter.separator import Separator
-import os
-import tempfile
-
-st.title("🎵 Music Splitter (Vocals & Instrumental)")
-
-uploaded_file = st.file_uploader("Upload an audio file (MP3 or WAV)", type=["mp3", "wav"])
-
-if uploaded_file is not None:
-    # Save uploaded file temporarily
-    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[1]) as tmp:
-        tmp.write(uploaded_file.read())
-        tmp_path = tmp.name
-
-    st.success(f"Uploaded: {uploaded_file.name}")
-
-    # Run Spleeter
-    with st.spinner("Separating audio into vocals and accompaniment..."):
-        separator = Separator('spleeter:2stems')
-        separator.separate_to_file(tmp_path, 'output')
-
-    # Get base name
-    base_name = os.path.splitext(os.path.basename(tmp_path))[0]
-    vocals_path = f'output/{base_name}/vocals.wav'
-    accompaniment_path = f'output/{base_name}/accompaniment.wav'
-
-    # Offer playback and download
-    st.subheader("🎧 Vocals")
-    st.audio(vocals_path)
-    with open(vocals_path, "rb") as f:
-        st.download_button("Download Vocals", f, file_name="vocals.wav")
-
-    st.subheader("🎸 Instrumental")
-    st.audio(accompaniment_path)
-    with open(accompaniment_path, "rb") as f:
-        st.download_button("Download Instrumental", f, file_name="accompaniment.wav")
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": []
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "code",
+      "metadata": {
+        "id": "LbqWtFaZURJv"
+      },
+      "outputs": [],
+      "source": [
+        "# Install FFmpeg (audio processing tool)\n",
+        "!apt-get install -y ffmpeg\n",
+        "\n",
+        "# Install TensorFlow and Spleeter\n",
+        "!pip install spleeter\n"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from google.colab import files\n",
+        "\n",
+        "print(\" Please upload an audio file (MP3 or WAV)\")\n",
+        "uploaded = files.upload()\n",
+        "\n",
+        "# Upload file name\n",
+        "filename = list(uploaded.keys())[0]\n",
+        "print(f\" File uploaded: {filename}\")\n"
+      ],
+      "metadata": {
+        "id": "v0yZ2WESUklT"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from spleeter.separator import Separator\n",
+        "\n",
+        "# Create separator object with 2 stems (vocals + others)\n",
+        "separator = Separator('spleeter:2stems')\n",
+        "\n",
+        "# Separate audio and save to 'output/' folder\n",
+        "separator.separate_to_file(filename, 'output')\n",
+        "print(\" Separation Complete!\")\n"
+      ],
+      "metadata": {
+        "id": "AC5gebRbUmwE"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import os\n",
+        "from google.colab import files\n",
+        "\n",
+        "# Extract base filename\n",
+        "base_name = os.path.splitext(filename)[0]\n",
+        "\n",
+        "# Construct paths\n",
+        "vocals_path = f'output/{base_name}/vocals.wav'\n",
+        "accompaniment_path = f'output/{base_name}/accompaniment.wav'\n",
+        "\n",
+        "# Offer files for download\n",
+        "print(\"⬇ Preparing downloads...\")\n",
+        "files.download(vocals_path)\n",
+        "files.download(accompaniment_path)\n"
+      ],
+      "metadata": {
+        "id": "0hvlZOWfU0ZW"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from IPython.display import Audio\n",
+        "\n",
+        "print(\"🎧 Vocals:\")\n",
+        "display(Audio(vocals_path))\n",
+        "\n",
+        "print(\"🎸 Instrumental:\")\n",
+        "display(Audio(accompaniment_path))\n"
+      ],
+      "metadata": {
+        "id": "nQX_7OUuU2Vz"
+      },
+      "execution_count": null,
+      "outputs": []
+    }
+  ]
+}
