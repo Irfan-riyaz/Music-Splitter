@@ -43,7 +43,6 @@
       "metadata": {
         "id": "v0yZ2WESUklT"
       },
-      "execution_count": null,
       "outputs": []
     },
     {
