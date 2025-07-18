@@ -1,105 +1,49 @@
-{
-  "nbformat": 4,
-  "nbformat_minor": 0,
-  "metadata": {
-    "colab": {
-      "provenance": []
-    },
-    "kernelspec": {
-      "name": "python3",
-      "display_name": "Python 3"
-    },
-    "language_info": {
-      "name": "python"
-    }
-  },
-  "cells": [
-    {
-      "cell_type": "code",
-      "metadata": {
-        "id": "LbqWtFaZURJv"
-      },
-      "outputs": [],
-      "source": [
-        "# Install FFmpeg (audio processing tool)\n",
-        "!apt-get install -y ffmpeg\n",
-        "\n",
-        "# Install TensorFlow and Spleeter\n",
-        "!pip install spleeter\n"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "source": [
-        "from google.colab import files\n",
-        "\n",
-        "print(\" Please upload an audio file (MP3 or WAV)\")\n",
-        "uploaded = files.upload()\n",
-        "\n",
-        "# Upload file name\n",
-        "filename = list(uploaded.keys())[0]\n",
-        "print(f\" File uploaded: {filename}\")\n"
-      ],
-      "metadata": {
-        "id": "v0yZ2WESUklT"
-      },
-      "outputs": []
-    },
-    {
-      "cell_type": "code",
-      "source": [
-        "from spleeter.separator import Separator\n",
-        "\n",
-        "# Create separator object with 2 stems (vocals + others)\n",
-        "separator = Separator('spleeter:2stems')\n",
-        "\n",
-        "# Separate audio and save to 'output/' folder\n",
-        "separator.separate_to_file(filename, 'output')\n",
-        "print(\" Separation Complete!\")\n"
-      ],
-      "metadata": {
-        "id": "AC5gebRbUmwE"
-      },
-      "outputs": []
-    },
-    {
-      "cell_type": "code",
-      "source": [
-        "import os\n",
-        "from google.colab import files\n",
-        "\n",
-        "# Extract base filename\n",
-        "base_name = os.path.splitext(filename)[0]\n",
-        "\n",
-        "# Construct paths\n",
-        "vocals_path = f'output/{base_name}/vocals.wav'\n",
-        "accompaniment_path = f'output/{base_name}/accompaniment.wav'\n",
-        "\n",
-        "# Offer files for download\n",
-        "print(\"⬇ Preparing downloads...\")\n",
-        "files.download(vocals_path)\n",
-        "files.download(accompaniment_path)\n"
-      ],
-      "metadata": {
-        "id": "0hvlZOWfU0ZW"
-      },
-      "outputs": []
-    },
-    {
-      "cell_type": "code",
-      "source": [
-        "from IPython.display import Audio\n",
-        "\n",
-        "print(\"🎧 Vocals:\")\n",
-        "display(Audio(vocals_path))\n",
-        "\n",
-        "print(\"🎸 Instrumental:\")\n",
-        "display(Audio(accompaniment_path))\n"
-      ],
-      "metadata": {
-        "id": "nQX_7OUuU2Vz"
-      },
-      "outputs": []
-    }
-  ]
-}
+import streamlit as st
+from spleeter.separator import Separator
+import os
+import tempfile
+import shutil
+
+st.set_page_config(page_title="Music Splitter", layout="centered")
+st.title("🎶 Music Splitter: Vocal & Instrumental Separator")
+
+st.markdown("""
+Upload an audio file (MP3 or WAV). This app will use [Spleeter](https://github.com/deezer/spleeter) to separate it into:
+- 🎤 Vocals
+- 🎸 Instrumental
+""")
+
+# Upload audio file
+uploaded_file = st.file_uploader("📤 Upload Audio File", type=["mp3", "wav"])
+
+if uploaded_file is not None:
+    # Save to temp file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[1]) as tmp_file:
+        tmp_file.write(uploaded_file.read())
+        input_audio_path = tmp_file.name
+
+    st.success(f"✅ File uploaded: {uploaded_file.name}")
+
+    # Separator
+    st.info("🔄 Separating audio... please wait")
+    separator = Separator('spleeter:2stems')
+    separator.separate_to_file(input_audio_path, 'output')
+
+    # Get output paths
+    base_name = os.path.splitext(os.path.basename(input_audio_path))[0]
+    output_dir = os.path.join("output", base_name)
+    vocals_path = os.path.join(output_dir, "vocals.wav")
+    instrumental_path = os.path.join(output_dir, "accompaniment.wav")
+
+    st.success("✅ Separation Complete!")
+
+    # Playback and download
+    st.subheader("🎤 Vocals")
+    st.audio(vocals_path)
+    with open(vocals_path, "rb") as f:
+        st.download_button("⬇ Download Vocals", f, file_name="vocals.wav")
+
+    st.subheader("🎸 Instrumental")
+    st.audio(instrumental_path)
+    with open(instrumental_path, "rb") as f:
+        st.download_button("⬇ Download Instrumental", f, file_name="instrumental.wav")
