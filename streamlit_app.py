@@ -13,7 +13,7 @@ output_dir = tempfile.mkdtemp()
 uploaded_file = st.file_uploader("Upload your audio file", type=["mp3", "wav"])
 
 if uploaded_file:
-    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[-1]) as tmp_input:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_input:
         tmp_input.write(uploaded_file.read())
         tmp_input.flush()
 
@@ -22,7 +22,6 @@ if uploaded_file:
                 separator = Separator('spleeter:2stems')
                 separator.separate_to_file(tmp_input.name, output_dir)
 
-                # Extract base name
                 base_name = os.path.splitext(os.path.basename(tmp_input.name))[0]
                 result_path = os.path.join(output_dir, base_name)
 
@@ -31,10 +30,8 @@ if uploaded_file:
 
                 st.success("Audio successfully split! 🎉")
 
-                st.audio(vocals_path, format='audio/wav', start_time=0)
+                st.audio(vocals_path, format='audio/wav')
                 st.markdown("⬆️ Vocals")
 
-                st.audio(accompaniment_path, format='audio/wav', start_time=0)
+                st.audio(accompaniment_path, format='audio/wav')
                 st.markdown("⬆️ Accompaniment")
-
-                st.markdown("🎧 Enjoy your separated tracks!")
