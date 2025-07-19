@@ -1,4 +1,0 @@
-spleeter
-gradio==4.26.0
-tensorflow
-ffmpeg-python
