@@ -1,5 +1,5 @@
-
-pip install streamlit
+streamlit
 spleeter==2.3.0
+ffmpeg-python==0.2.0
+numpy==1.19.5
 tensorflow==2.5.0
-ffmpeg-python
