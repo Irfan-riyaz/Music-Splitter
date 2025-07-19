@@ -1,48 +1,47 @@
-# streamlit_app.py
-import subprocess
-import os
 import streamlit as st
 from spleeter.separator import Separator
+import os
+import shutil
+import uuid
 
-# Install FFmpeg and Spleeter (only required in environments that allow runtime install, e.g. Colab)
-def install_dependencies():
-    try:
-        subprocess.run(["ffmpeg", "-version"], check=True)
-    except FileNotFoundError:
-        subprocess.run(["apt-get", "update"])
-        subprocess.run(["apt-get", "install", "-y", "ffmpeg"])
-    try:
-        import spleeter
-    except ImportError:
-        subprocess.run(["pip", "install", "spleeter"])
+st.set_page_config(page_title="Music Splitter", layout="centered")
 
-# Comment out in Hugging Face/production: used only for Colab
-# install_dependencies()
+st.title("🎵 Music Splitter using Spleeter")
+st.write("Upload an audio file (MP3 or WAV), and this app will separate vocals and accompaniment using Spleeter.")
 
-st.title("🎵 Music Splitter")
-st.write("Upload an MP3 or WAV file to extract vocals and instrumental parts using Spleeter")
-
-uploaded_file = st.file_uploader("Choose an audio file", type=["mp3", "wav"])
+uploaded_file = st.file_uploader("Upload Audio File", type=["mp3", "wav"])
 
 if uploaded_file is not None:
-    with open(uploaded_file.name, "wb") as f:
-        f.write(uploaded_file.getbuffer())
-    st.success(f"Uploaded: {uploaded_file.name}")
+    file_id = str(uuid.uuid4())
+    os.makedirs("uploads", exist_ok=True)
+    file_path = os.path.join("uploads", f"{file_id}_{uploaded_file.name}")
+    
+    with open(file_path, "wb") as f:
+        f.write(uploaded_file.read())
 
-    with st.spinner("Separating audio..."):
-        separator = Separator('spleeter:2stems')
-        separator.separate_to_file(uploaded_file.name, 'output')
+    st.success("✅ Audio file uploaded successfully!")
 
-    base_name = os.path.splitext(uploaded_file.name)[0]
-    vocals_path = f'output/{base_name}/vocals.wav'
-    acc_path = f'output/{base_name}/accompaniment.wav'
+    if st.button("🔀 Split Audio"):
+        with st.spinner("⏳ Separating audio, please wait..."):
+            output_dir = os.path.join("output", file_id)
+            os.makedirs(output_dir, exist_ok=True)
 
-    st.subheader("Download Results")
-    with open(vocals_path, "rb") as f:
-        st.download_button(label="⬇ Download Vocals", data=f, file_name="vocals.wav")
+            # Perform separation using Spleeter
+            separator = Separator("spleeter:2stems")
+            separator.separate_to_file(file_path, output_dir)
 
-    with open(acc_path, "rb") as f:
-        st.download_button(label="⬇ Download Instrumental", data=f, file_name="accompaniment.wav")
+            # Locate result files
+            split_path = os.path.join(output_dir, os.path.splitext(os.path.basename(file_path))[0])
+            vocal_path = os.path.join(split_path, "vocals.wav")
+            acc_path = os.path.join(split_path, "accompaniment.wav")
 
-    st.audio(vocals_path, format="audio/wav", start_time=0)
-    st.audio(acc_path, format="audio/wav", start_time=0)
+            if os.path.exists(vocal_path) and os.path.exists(acc_path):
+                st.success("🎉 Audio split successfully!")
+
+                st.subheader("🔊 Vocals")
+                st.audio(vocal_path)
+
+                st.subheader("🎶 Instrumental")
+                st.audio(acc_path)
+            else:
+                st.error("❌ Error: Split files not found.")
