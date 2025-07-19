@@ -1,34 +1,40 @@
-
+import os
 import streamlit as st
 from spleeter.separator import Separator
-import os
 import tempfile
-import shutil
 
 st.set_page_config(page_title="🎵 Music Splitter", layout="centered")
 st.title("🎵 Music Splitter")
-st.write("Upload an audio file (MP3 or WAV) to split it into vocals and accompaniment using Spleeter.")
+st.markdown("Upload an audio file (MP3/WAV) and split it into vocals and accompaniment using Spleeter.")
 
-uploaded_file = st.file_uploader("Choose an audio file", type=["mp3", "wav"])
+# Create temp directory for output
+output_dir = tempfile.mkdtemp()
 
-if uploaded_file is not None:
-    with tempfile.TemporaryDirectory() as tmpdir:
-        input_path = os.path.join(tmpdir, uploaded_file.name)
-        with open(input_path, "wb") as f:
-            f.write(uploaded_file.read())
+uploaded_file = st.file_uploader("Upload your audio file", type=["mp3", "wav"])
 
-        st.info("Processing audio file... This may take a minute.")
+if uploaded_file:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[-1]) as tmp_input:
+        tmp_input.write(uploaded_file.read())
+        tmp_input.flush()
 
-        separator = Separator("spleeter:2stems")
-        separator.separate_to_file(input_path, tmpdir)
+        if st.button("🔊 Split Audio"):
+            with st.spinner("Processing... this may take a minute ⏳"):
+                separator = Separator('spleeter:2stems')
+                separator.separate_to_file(tmp_input.name, output_dir)
 
-        stem_dir = os.path.join(tmpdir, os.path.splitext(uploaded_file.name)[0])
-        vocals_path = os.path.join(stem_dir, "vocals.wav")
-        accompaniment_path = os.path.join(stem_dir, "accompaniment.wav")
+                # Extract base name
+                base_name = os.path.splitext(os.path.basename(tmp_input.name))[0]
+                result_path = os.path.join(output_dir, base_name)
 
-        if os.path.exists(vocals_path) and os.path.exists(accompaniment_path):
-            st.success("Audio split successfully!")
-            st.audio(vocals_path, format="audio/wav", start_time=0)
-            st.audio(accompaniment_path, format="audio/wav", start_time=0)
-        else:
-            st.error("Failed to process audio file.")
+                vocals_path = os.path.join(result_path, "vocals.wav")
+                accompaniment_path = os.path.join(result_path, "accompaniment.wav")
+
+                st.success("Audio successfully split! 🎉")
+
+                st.audio(vocals_path, format='audio/wav', start_time=0)
+                st.markdown("⬆️ Vocals")
+
+                st.audio(accompaniment_path, format='audio/wav', start_time=0)
+                st.markdown("⬆️ Accompaniment")
+
+                st.markdown("🎧 Enjoy your separated tracks!")
